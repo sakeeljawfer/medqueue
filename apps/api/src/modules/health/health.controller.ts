@@ -2,7 +2,9 @@ import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/co
 import type { Redis } from 'ioredis';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { REDIS } from '../../infra/redis/redis.module';
+import { Public } from '../../common/decorators/public.decorator';
 
+@Public()
 @Controller()
 export class HealthController {
   constructor(
