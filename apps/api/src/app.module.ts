@@ -14,6 +14,7 @@ import { StorageModule } from './infra/storage/storage.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { DoctorsModule } from './modules/doctors/doctors.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { QueueModule } from './modules/queue/queue.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { RateLimitGuard } from './common/guards/rate-limit.guard';
@@ -39,6 +40,7 @@ import { RateLimitGuard } from './common/guards/rate-limit.guard';
     UsersModule,
     DoctorsModule,
     AdminModule,
+    QueueModule,
     HealthModule,
   ],
   providers: [
