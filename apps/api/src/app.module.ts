@@ -10,6 +10,10 @@ import { RedisModule } from './infra/redis/redis.module';
 import { SmsModule } from './modules/notifications/sms/sms.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { StorageModule } from './infra/storage/storage.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { DoctorsModule } from './modules/doctors/doctors.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { RateLimitGuard } from './common/guards/rate-limit.guard';
@@ -29,8 +33,12 @@ import { RateLimitGuard } from './common/guards/rate-limit.guard';
     PrismaModule,
     RedisModule,
     SmsModule,
+    StorageModule,
+    AuditModule,
     AuthModule,
     UsersModule,
+    DoctorsModule,
+    AdminModule,
     HealthModule,
   ],
   providers: [
