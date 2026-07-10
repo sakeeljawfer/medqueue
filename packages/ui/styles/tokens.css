@@ -1,0 +1,110 @@
+/*
+ * MedQueue design tokens — "calm clinical trust".
+ * Single source of truth for color, type, spacing, radius, elevation.
+ * Components consume ONLY these custom properties (via the Tailwind @theme
+ * mapping in each app) — never raw palette values.
+ */
+
+:root {
+  /* ---- Color: deep teal-green primary (#0E6B5C family) ---- */
+  --mq-teal-50: #eef7f4;
+  --mq-teal-100: #d5ece5;
+  --mq-teal-200: #aad8cc;
+  --mq-teal-300: #79bfae;
+  --mq-teal-400: #47a18d;
+  --mq-teal-500: #1f8571;
+  --mq-teal-600: #0e6b5c;
+  --mq-teal-700: #0b574b;
+  --mq-teal-800: #094238;
+  --mq-teal-900: #062d26;
+
+  /* ---- Accent amber — reserved for live/queue-active states ONLY ---- */
+  --mq-amber-50: #fdf3e4;
+  --mq-amber-100: #fae3c2;
+  --mq-amber-200: #f3c98c;
+  --mq-amber-300: #e9ad57;
+  --mq-amber-400: #e09b3f;
+  --mq-amber-500: #d98e32;
+  --mq-amber-600: #b87526;
+  --mq-amber-700: #935c1d;
+  --mq-amber-800: #6d4415;
+  --mq-amber-900: #482d0e;
+
+  /* ---- Status reds/greens (derived, muted to fit the palette) ---- */
+  --mq-red-50: #fbeeec;
+  --mq-red-500: #b3442f;
+  --mq-red-600: #96371f;
+  --mq-green-50: #eef6ee;
+  --mq-green-500: #3d7a44;
+  --mq-green-600: #2f6336;
+
+  /* ---- Neutrals: warm off-white surfaces, ink text ---- */
+  --mq-neutral-0: #ffffff;
+  --mq-neutral-50: #faf8f5;
+  --mq-neutral-100: #f2efe9;
+  --mq-neutral-200: #e5e0d7;
+  --mq-neutral-300: #cfc9bd;
+  --mq-neutral-400: #a8a296;
+  --mq-neutral-500: #7d7a70;
+  --mq-neutral-600: #57564e;
+  --mq-neutral-700: #3b3d38;
+  --mq-neutral-800: #272b27;
+  --mq-neutral-900: #1a2421;
+
+  /* ---- Semantic surfaces ---- */
+  --mq-surface: var(--mq-neutral-50);
+  --mq-surface-raised: var(--mq-neutral-0);
+  --mq-surface-sunken: var(--mq-neutral-100);
+  --mq-ink: var(--mq-neutral-900);
+  --mq-ink-muted: var(--mq-neutral-500);
+  --mq-line: var(--mq-neutral-200);
+
+  /* ---- Typography ---- */
+  --mq-font-stack: 'Inter', 'Noto Sans Sinhala', 'Noto Sans Tamil', system-ui, sans-serif;
+  --mq-text-xs: 0.75rem;    /* 12 */
+  --mq-text-sm: 0.875rem;   /* 14 */
+  --mq-text-base: 1rem;     /* 16 */
+  --mq-text-lg: 1.125rem;   /* 18 */
+  --mq-text-xl: 1.375rem;   /* 22 */
+  --mq-text-2xl: 1.75rem;   /* 28 */
+  --mq-text-3xl: 2.25rem;   /* 36 */
+  --mq-tracking-heading: -0.02em;
+
+  /* ---- Spacing (8px grid) / radius / elevation ---- */
+  --mq-space: 8px;
+  --mq-radius: 10px;
+  --mq-shadow-raise: 0 1px 2px rgb(26 36 33 / 0.06), 0 1px 3px rgb(26 36 33 / 0.08);
+  --mq-shadow-float: 0 4px 12px rgb(26 36 33 / 0.1), 0 2px 4px rgb(26 36 33 / 0.06);
+
+  /* ---- Motion ---- */
+  --mq-ease: cubic-bezier(0.2, 0, 0, 1);
+  --mq-duration-fast: 150ms;
+  --mq-duration-base: 200ms;
+  --mq-duration-slow: 250ms;
+}
+
+/* Locale-aware font ordering: put the script's face first for correct metrics. */
+:root[data-locale='si'] {
+  --mq-font-stack: 'Noto Sans Sinhala', 'Inter', system-ui, sans-serif;
+}
+:root[data-locale='ta'] {
+  --mq-font-stack: 'Noto Sans Tamil', 'Inter', system-ui, sans-serif;
+}
+
+/* ---- Dark mode ---- */
+:root[data-theme='dark'] {
+  --mq-surface: #101613;
+  --mq-surface-raised: #182019;
+  --mq-surface-sunken: #0b100d;
+  --mq-ink: #edeae3;
+  --mq-ink-muted: #9a978d;
+  --mq-line: #2b332c;
+  --mq-shadow-raise: 0 1px 2px rgb(0 0 0 / 0.4);
+  --mq-shadow-float: 0 4px 12px rgb(0 0 0 / 0.5);
+}
+
+/* Tabular numerals for token numbers and ETAs. */
+.mq-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}

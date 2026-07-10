@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum Locale {
+  en
+  si
+  ta
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum Specialty {
+  GENERAL_PRACTICE
+  PEDIATRICS
+  GYNECOLOGY
+  CARDIOLOGY
+  DERMATOLOGY
+  ENT
+  OPHTHALMOLOGY
+  ORTHOPEDICS
+  PSYCHIATRY
+  NEUROLOGY
+  UROLOGY
+  ONCOLOGY
+  ENDOCRINOLOGY
+  GASTROENTEROLOGY
+  RESPIRATORY
+}
+
+enum SessionStatus {
+  SCHEDULED
+  LIVE
+  PAUSED
+  ENDED
+  CANCELLED
+}
+
+enum AppointmentStatus {
+  BOOKED
+  IN_CONSULT
+  COMPLETED
+  NO_SHOW
+  CANCELLED
+}
+
+enum PaymentType {
+  SUBSCRIPTION
+  LISTING
+}
+
+enum PaymentMethod {
+  PAYHERE
+  BANK_SLIP
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationChannel {
+  SMS
+  PUSH
+  INAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id                String     @id @default(cuid())
+  phone             String     @unique
+  role              UserRole   @default(PATIENT)
+  name              String?
+  preferredLanguage Locale     @default(en)
+  status            UserStatus @default(ACTIVE)
+  pdpaConsentAt     DateTime?
+  deletedAt         DateTime? // soft delete; purge job removes after 30 days
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  doctorProfile  DoctorProfile?
+  appointments   Appointment[]
+  notifications  Notification[]
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]     @relation("actor")
+
+  @@index([role, status])
+}
+
+model RefreshToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  familyId   String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedBy String?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model DoctorProfile {
+  id                String         @id @default(cuid())
+  userId            String         @unique
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slmcRegNo         String         @unique
+  specialty         Specialty
+  bio               String?
+  photoUrl          String?
+  consultationFeeLKR Decimal       @db.Decimal(10, 2)
+  approvalStatus    ApprovalStatus @default(PENDING)
+  rejectionReason   String?
+  approvedByAdminId String?
+  approvedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  dispensaries Dispensary[]
+  payments     Payment[]
+
+  @@index([approvalStatus])
+  @@index([specialty])
+}
+
+model Dispensary {
+  id           String        @id @default(cuid())
+  doctorId     String
+  doctor       DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  name         String
+  addressLine  String
+  town         String
+  district     String // district slug from @medqueue/shared DISTRICTS
+  lat          Float
+  lng          Float
+  contactPhone String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  schedules SessionSchedule[]
+
+  @@index([district])
+  @@index([doctorId])
+}
+
+model SessionSchedule {
+  id                String     @id @default(cuid())
+  dispensaryId      String
+  dispensary        Dispensary @relation(fields: [dispensaryId], references: [id], onDelete: Cascade)
+  dayOfWeek         Int // 0 = Sunday … 6 = Saturday, Asia/Colombo local
+  startTime         String // "HH:mm" Colombo local
+  endTime           String // "HH:mm" Colombo local
+  maxPatients       Int
+  avgConsultMinutes Int        @default(10)
+  active            Boolean    @default(true)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  sessions Session[]
+
+  @@index([dispensaryId, dayOfWeek])
+}
+
+model Session {
+  id           String          @id @default(cuid())
+  scheduleId   String
+  schedule     SessionSchedule @relation(fields: [scheduleId], references: [id])
+  date         DateTime        @db.Date
+  status       SessionStatus   @default(SCHEDULED)
+  startedAt    DateTime?
+  endedAt      DateTime?
+  currentToken Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  appointments Appointment[]
+
+  @@unique([scheduleId, date])
+  @@index([status])
+  @@index([date])
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  sessionId   String
+  session     Session           @relation(fields: [sessionId], references: [id])
+  patientId   String
+  patient     User              @relation(fields: [patientId], references: [id])
+  tokenNumber Int
+  status      AppointmentStatus @default(BOOKED)
+  // Set when a no-show rejoins at the queue tail; allowed once per session.
+  rejoinedFromToken Int?
+  bookedAt    DateTime          @default(now())
+  calledAt    DateTime?
+  completedAt DateTime?
+
+  @@unique([sessionId, tokenNumber])
+  @@index([patientId, status])
+  @@index([sessionId, status])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  doctorId          String
+  doctor            DoctorProfile @relation(fields: [doctorId], references: [id])
+  type              PaymentType
+  amountLKR         Decimal       @db.Decimal(10, 2)
+  method            PaymentMethod
+  slipImageUrl      String?
+  status            PaymentStatus @default(PENDING)
+  reviewedByAdminId String?
+  reviewedAt        DateTime?
+  payhereRef        String?       @unique
+  idempotencyKey    String?       @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([status])
+  @@index([doctorId])
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   NotificationChannel
+  template  String
+  payload   Json
+  status    NotificationStatus  @default(PENDING)
+  sentAt    DateTime?
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, readAt])
+}
+
+// Append-only: no update/delete paths exist in application code, and a DB
+// trigger (see migration) rejects UPDATE/DELETE outright.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation("actor", fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}
