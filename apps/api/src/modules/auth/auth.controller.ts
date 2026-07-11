@@ -76,6 +76,17 @@ export class AuthController {
     return { refreshed: true };
   }
 
+  /**
+   * Short-lived token for the Socket.IO handshake — the browser cannot read
+   * the httpOnly access cookie, so it exchanges it here.
+   */
+  @Post('socket-token')
+  @HttpCode(200)
+  socketToken(@Req() req: Request): { token: string } {
+    const user = (req as Request & { user: { sub: string; role: never } }).user;
+    return { token: this.tokens.signAccessToken({ sub: user.sub, role: user.role }) };
+  }
+
   @Public()
   @Post('logout')
   @HttpCode(204)

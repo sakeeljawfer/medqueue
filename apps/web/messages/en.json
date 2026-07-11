@@ -1,6 +1,213 @@
 {
   "home": {
     "title": "MedQueue",
-    "tagline": "See your place in the queue before you leave home."
+    "tagline": "See your place in the queue before you leave home.",
+    "myAppointments": "My tokens",
+    "searchPlaceholder": "Search doctor or specialty",
+    "nearMe": "Near me",
+    "verified": "SLMC Verified",
+    "liveNow": "Live now",
+    "empty": {
+      "title": "No doctors found",
+      "body": "Try a different district, or clear your search and browse nearby dispensaries."
+    }
+  },
+  "login": {
+    "title": "Welcome",
+    "subtitle": "Sign in with your mobile number to book and track dispensary tokens.",
+    "language": "Language",
+    "phoneLabel": "Mobile number",
+    "phoneHint": "We'll send a 6-digit code by SMS. Standard rates apply.",
+    "sendCode": "Send code",
+    "codeLabel": "Verification code",
+    "codeHint": "Sent to {phone}. It expires in 5 minutes.",
+    "nameLabel": "Your name",
+    "pdpaConsent": "I agree to MedQueue storing my details to manage my bookings, as described in the Privacy Policy.",
+    "verify": "Verify & continue",
+    "changeNumber": "Use a different number",
+    "welcome": "You're signed in",
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "invalid_lk_mobile": "Enter a valid Sri Lankan mobile number (07X XXX XXXX).",
+      "otp_invalid": "That code doesn't match. Check the SMS and try again.",
+      "otp_expired_or_missing": "That code has expired. Request a new one.",
+      "otp_too_many_attempts": "Too many tries. Request a new code.",
+      "otp_rate_limited": "Too many codes requested. Please wait a few minutes.",
+      "pdpa_consent_required": "Add your name and accept the privacy notice to create your account.",
+      "account_disabled": "This account is not active. Contact support for help."
+    }
+  },
+  "doctor": {
+    "back": "Back",
+    "slmcVerified": "SLMC Verified",
+    "live": "Live",
+    "getToken": "Get token",
+    "full": "Full",
+    "slots": "{booked} of {max} tokens issued",
+    "booked": "Token #{token} is yours",
+    "errors": {
+      "generic": "Booking failed. Please try again.",
+      "already_booked_this_session": "You already hold a token for this session.",
+      "max_active_bookings_reached": "You can hold at most 3 active tokens. Cancel one to book again.",
+      "session_full": "This session is fully booked.",
+      "session_over": "This session has ended."
+    }
+  },
+  "days": {
+    "0": "Sunday",
+    "1": "Monday",
+    "2": "Tuesday",
+    "3": "Wednesday",
+    "4": "Thursday",
+    "5": "Friday",
+    "6": "Saturday"
+  },
+  "specialty": {
+    "GENERAL_PRACTICE": "General practice",
+    "PEDIATRICS": "Paediatrics",
+    "GYNECOLOGY": "Gynaecology",
+    "CARDIOLOGY": "Cardiology",
+    "DERMATOLOGY": "Dermatology",
+    "ENT": "ENT",
+    "OPHTHALMOLOGY": "Eye specialist",
+    "ORTHOPEDICS": "Orthopaedics",
+    "PSYCHIATRY": "Psychiatry",
+    "NEUROLOGY": "Neurology",
+    "UROLOGY": "Urology",
+    "ONCOLOGY": "Oncology",
+    "ENDOCRINOLOGY": "Endocrinology",
+    "GASTROENTEROLOGY": "Gastroenterology",
+    "RESPIRATORY": "Chest specialist"
+  },
+  "ticket": {
+    "myAppointments": "My tokens",
+    "live": "LIVE",
+    "paused": "Paused",
+    "ended": "Ended",
+    "yourToken": "Your token",
+    "nowServing": "Now serving",
+    "estWait": "Est. wait",
+    "min": "min",
+    "position": "{position, plural, =0 {You're next — please be ready} one {# patient ahead of you} other {# patients ahead of you}}",
+    "yourTurn": "It's your turn — go in now",
+    "missed": "Your token was called and skipped.",
+    "rejoin": "Rejoin at end of queue",
+    "served": "Served",
+    "avgConsult": "Avg consult",
+    "liveUpdates": "Live",
+    "reconnecting": "Reconnecting…",
+    "arriveHint": "Leave for the dispensary when your wait drops below your travel time. Your position updates automatically."
+  },
+  "appointments": {
+    "title": "My tokens",
+    "findDoctor": "Find a doctor",
+    "upcoming": "Active",
+    "history": "History",
+    "empty": {
+      "title": "No tokens yet",
+      "body": "Find a doctor near you and get a queue token — you'll see your live position here."
+    },
+    "status": {
+      "BOOKED": "Booked",
+      "IN_CONSULT": "In consult",
+      "COMPLETED": "Completed",
+      "NO_SHOW": "Missed",
+      "CANCELLED": "Cancelled"
+    }
+  },
+  "doctorConsole": {
+    "todaysSessions": "Today's sessions",
+    "payments": "Payments",
+    "notApproved": "Your profile is awaiting admin approval — sessions can start once approved.",
+    "startFailed": "Could not start the session. Please try again.",
+    "noProfile": {
+      "title": "No doctor profile",
+      "body": "Complete your registration to set up dispensaries and session schedules."
+    },
+    "noSessions": {
+      "title": "No sessions today",
+      "body": "You have no schedules for today. Add one in your schedule manager."
+    },
+    "maxPatients": "max {max} patients",
+    "bookings": "{count, plural, =0 {No bookings yet} one {# booking} other {# bookings}}",
+    "openConsole": "Open console",
+    "ended": "Ended",
+    "startSession": "Start session",
+    "sessionConsole": "Session console",
+    "liveUpdates": "Live updates on",
+    "reconnecting": "Reconnecting…",
+    "liveBadge": "LIVE",
+    "pausedBadge": "Paused",
+    "nowServing": "Now serving",
+    "waitingCount": "{count, plural, =0 {No one waiting} one {# patient waiting} other {# patients waiting}}",
+    "avgConsult": "avg consult",
+    "min": "min",
+    "nextPatient": "Next patient",
+    "noShow": "No-show",
+    "pause": "Pause",
+    "resume": "Resume",
+    "endSession": "End session",
+    "patients": "Patients",
+    "noBookingsYet": "No bookings yet. Patients appear here as they take tokens.",
+    "queueEmpty": "Queue is empty — no one is waiting.",
+    "actionFailed": "That didn't go through. Please try again.",
+    "status": {
+      "BOOKED": "Waiting",
+      "IN_CONSULT": "In consult",
+      "COMPLETED": "Done",
+      "NO_SHOW": "No-show",
+      "CANCELLED": "Cancelled"
+    },
+    "endConfirm": {
+      "title": "End this session?",
+      "body": "{count, plural, =0 {The queue is empty.} one {# patient is still waiting and will be notified.} other {# patients are still waiting and will be notified.}}",
+      "cancel": "Keep going",
+      "confirm": "End session"
+    }
+  },
+  "payments": {
+    "title": "Payments",
+    "backToDashboard": "Dashboard",
+    "subscription": {
+      "title": "Monthly listing subscription",
+      "body": "Keep your profile visible to patients. Pay online with PayHere, or transfer to our bank account and upload the slip for approval."
+    },
+    "payWithPayhere": "Pay with PayHere",
+    "uploadSlip": "Upload bank slip",
+    "slipHint": "JPG, PNG, WEBP or PDF up to 5 MB. Approval usually takes less than one working day.",
+    "slipUploaded": "Slip received — we'll notify you once it's reviewed.",
+    "slipBadType": "That file type isn't supported. Upload a JPG, PNG, WEBP or PDF.",
+    "slipTooLarge": "That file is over 5 MB. Upload a smaller scan or photo.",
+    "slipFailed": "Upload failed. Check your connection and try again.",
+    "noProfile": "Complete your doctor registration before paying.",
+    "checkoutFailed": "Could not start the payment. Please try again.",
+    "history": "Payment history",
+    "empty": {
+      "title": "No payments yet",
+      "body": "Your subscription and listing payments will appear here."
+    },
+    "type": {
+      "SUBSCRIPTION": "Subscription",
+      "LISTING": "Listing"
+    },
+    "method": {
+      "PAYHERE": "PayHere",
+      "BANK_SLIP": "Bank slip"
+    },
+    "status": {
+      "PENDING": "Pending review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "return": {
+      "title": "Payment received by PayHere",
+      "body": "We're confirming it with PayHere now. Your payment history will update within a minute or two.",
+      "cta": "View payment history"
+    },
+    "cancelled": {
+      "title": "Payment cancelled",
+      "body": "No charge was made. You can try again, or upload a bank transfer slip instead.",
+      "cta": "Back to payments"
+    }
   }
 }
