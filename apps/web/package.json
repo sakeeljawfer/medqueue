@@ -13,6 +13,7 @@
   "dependencies": {
     "@medqueue/shared": "workspace:*",
     "@medqueue/ui": "workspace:*",
+    "@sentry/nextjs": "^10.64.0",
     "@tanstack/react-query": "^5.74.4",
     "@tanstack/react-table": "^8.21.3",
     "framer-motion": "^12.9.2",

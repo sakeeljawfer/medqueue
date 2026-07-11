@@ -1,0 +1,88 @@
+# Production single-VPS stack: Caddy terminates TLS and reverse-proxies to
+# web + api. Postgres/Redis stay on the private compose network (no host ports).
+#
+#   cp ../.env.example .env   # then fill in real secrets
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# WebSockets: Caddy proxies /socket.io to the api service transparently.
+# Scale the api horizontally (docker compose up -d --scale api=3) — the
+# Socket.IO Redis adapter keeps queue broadcasts consistent across replicas.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN, e.g. medqueue.lk}
+    depends_on:
+      - web
+      - api
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+    expose:
+      - "3000"
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://medqueue:${POSTGRES_PASSWORD:?}@postgres:5432/medqueue
+      REDIS_URL: redis://redis:6379
+      WEB_URL: https://${DOMAIN}
+      API_URL: https://${DOMAIN}/api
+    expose:
+      - "4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medqueue
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: medqueue
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medqueue"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pgdata:
+  redisdata:

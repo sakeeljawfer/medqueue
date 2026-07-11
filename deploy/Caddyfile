@@ -1,0 +1,24 @@
+# Caddy auto-provisions Let's Encrypt certificates for $DOMAIN.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# API + Socket.IO under /api and /socket.io
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy api:4000
+	}
+	handle /socket.io/* {
+		reverse_proxy api:4000
+	}
+
+	# Everything else → Next.js
+	handle {
+		reverse_proxy web:3000
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}

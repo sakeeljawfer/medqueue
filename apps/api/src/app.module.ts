@@ -17,6 +17,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { TelemetryModule } from './infra/telemetry/telemetry.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { RateLimitGuard } from './common/guards/rate-limit.guard';
@@ -45,6 +46,7 @@ import { RateLimitGuard } from './common/guards/rate-limit.guard';
     QueueModule,
     PaymentsModule,
     NotificationsModule,
+    TelemetryModule,
     HealthModule,
   ],
   providers: [

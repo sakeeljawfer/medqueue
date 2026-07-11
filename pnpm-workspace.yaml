@@ -5,8 +5,11 @@ allowBuilds:
   '@parcel/watcher': true
   '@prisma/client': true
   '@prisma/engines': true
+  # Only needed to upload source maps from CI; not used at runtime.
+  '@sentry/cli': false
   '@swc/core': true
   esbuild: true
   prisma: true
+  protobufjs: false
   sharp: true
   unrs-resolver: true
