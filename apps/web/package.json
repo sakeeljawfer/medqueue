@@ -14,6 +14,7 @@
     "@medqueue/shared": "workspace:*",
     "@medqueue/ui": "workspace:*",
     "@tanstack/react-query": "^5.74.4",
+    "@tanstack/react-table": "^8.21.3",
     "framer-motion": "^12.9.2",
     "leaflet": "^1.9.4",
     "next": "^15.3.1",

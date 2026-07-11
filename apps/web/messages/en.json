@@ -209,5 +209,132 @@
       "body": "No charge was made. You can try again, or upload a bank transfer slip instead.",
       "cta": "Back to payments"
     }
+  },
+  "admin": {
+    "nav": {
+      "admin": "Admin",
+      "overview": "Overview",
+      "doctors": "Doctor approvals",
+      "payments": "Payment approvals",
+      "users": "Users",
+      "audit": "Audit log"
+    },
+    "overview": {
+      "title": "Platform overview",
+      "forbidden": "You need an admin account to view this page.",
+      "activeSessions": "Sessions live now",
+      "bookingsToday": "Bookings today",
+      "pendingDoctors": "Doctors awaiting approval",
+      "pendingPayments": "Payments awaiting review",
+      "totalPatients": "Registered patients"
+    },
+    "doctors": {
+      "title": "Doctor approval queue",
+      "empty": {
+        "title": "Queue is clear",
+        "body": "No doctor profiles are waiting for review."
+      },
+      "slmc": "SLMC reg. no.",
+      "applied": "Applied {date}",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approved": "Doctor approved — they've been notified.",
+      "rejected": "Profile rejected — the doctor has been notified.",
+      "decisionFailed": "That didn't go through. Please try again.",
+      "rejectDialog": {
+        "title": "Reject this profile?",
+        "body": "{name} will be notified with the reason you give below.",
+        "reasonLabel": "Reason for rejection",
+        "reasonPlaceholder": "e.g. SLMC number could not be verified against the register",
+        "cancel": "Keep pending",
+        "confirm": "Reject profile"
+      }
+    },
+    "payments": {
+      "title": "Payment approval queue",
+      "empty": {
+        "title": "Queue is clear",
+        "body": "No bank slips are waiting for review."
+      },
+      "type": {
+        "SUBSCRIPTION": "Subscription",
+        "LISTING": "Listing"
+      },
+      "reviewSlip": "Review slip",
+      "approved": "Payment approved — the doctor has been notified.",
+      "rejected": "Payment rejected — the doctor has been notified.",
+      "decisionFailed": "That didn't go through. Please try again.",
+      "slipDialog": {
+        "title": "Bank transfer slip",
+        "approve": "Approve payment",
+        "reject": "Reject",
+        "alt": "Uploaded bank transfer slip",
+        "missing": "No slip image was attached to this payment."
+      }
+    },
+    "users": {
+      "title": "User management",
+      "searchLabel": "Search",
+      "searchPlaceholder": "Name or phone number",
+      "allRoles": "All roles",
+      "allStatuses": "All statuses",
+      "noResults": "No users match these filters.",
+      "statusUpdated": "Status updated.",
+      "updateFailed": "That didn't go through. Please try again.",
+      "columns": {
+        "name": "Name",
+        "phone": "Phone",
+        "role": "Role",
+        "status": "Status",
+        "joined": "Joined"
+      },
+      "role": {
+        "PATIENT": "Patient",
+        "DOCTOR": "Doctor",
+        "ADMIN": "Admin"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "SUSPENDED": "Suspended",
+        "BANNED": "Banned"
+      },
+      "actions": {
+        "reinstate": "Reinstate",
+        "suspend": "Suspend",
+        "ban": "Ban"
+      },
+      "confirm": {
+        "cancel": "Cancel",
+        "ACTIVE": {
+          "title": "Reinstate this account?",
+          "body": "{name} will be able to sign in and book again immediately.",
+          "confirm": "Reinstate"
+        },
+        "SUSPENDED": {
+          "title": "Suspend this account?",
+          "body": "{name} will be signed out everywhere and blocked from booking until reinstated.",
+          "confirm": "Suspend"
+        },
+        "BANNED": {
+          "title": "Ban this account?",
+          "body": "{name} will be signed out everywhere and permanently blocked. This is recorded in the audit log.",
+          "confirm": "Ban"
+        }
+      }
+    },
+    "audit": {
+      "title": "Audit log",
+      "filterLabel": "Entity type",
+      "allEntities": "All entities",
+      "empty": {
+        "title": "No entries",
+        "body": "Admin actions and queue state changes will appear here."
+      },
+      "before": "Before",
+      "after": "After",
+      "actor": "Actor",
+      "system": "system",
+      "loadMore": "Load older entries"
+    }
   }
 }

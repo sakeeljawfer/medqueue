@@ -14,6 +14,24 @@ export class AdminService {
     private readonly events: EventEmitter2,
   ) {}
 
+  async overview() {
+    // "Today" in Asia/Colombo (UTC+05:30, no DST), expressed as a UTC instant.
+    const COLOMBO_OFFSET_MS = 5.5 * 3_600_000;
+    const DAY_MS = 86_400_000;
+    const todayStart = new Date(
+      Math.floor((Date.now() + COLOMBO_OFFSET_MS) / DAY_MS) * DAY_MS - COLOMBO_OFFSET_MS,
+    );
+    const [activeSessions, bookingsToday, pendingDoctors, pendingPayments, totalPatients] =
+      await Promise.all([
+        this.prisma.session.count({ where: { status: { in: ['LIVE', 'PAUSED'] } } }),
+        this.prisma.appointment.count({ where: { bookedAt: { gte: todayStart } } }),
+        this.prisma.doctorProfile.count({ where: { approvalStatus: 'PENDING' } }),
+        this.prisma.payment.count({ where: { status: 'PENDING', method: 'BANK_SLIP' } }),
+        this.prisma.user.count({ where: { role: 'PATIENT', deletedAt: null } }),
+      ]);
+    return { activeSessions, bookingsToday, pendingDoctors, pendingPayments, totalPatients };
+  }
+
   async pendingDoctors(take = 50) {
     const profiles = await this.prisma.doctorProfile.findMany({
       where: { approvalStatus: 'PENDING' },
