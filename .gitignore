@@ -10,3 +10,5 @@ coverage/
 .DS_Store
 storybook-static/
 minio-data/
+.vercel
+.env*
