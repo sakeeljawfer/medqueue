@@ -27,3 +27,71 @@ export class VerifyOtpDto extends RequestOtpDto {
   @IsBoolean()
   pdpaConsent?: boolean;
 }
+
+export class LoginDto {
+  @IsString()
+  identifier!: string;
+
+  @IsString()
+  password!: string;
+}
+
+export class RegisterPatientDto {
+  @IsString()
+  @Matches(/^(?:\+94|94|0)7[\s\-]?\d{1}[\s\-]?\d{3}[\s\-]?\d{4}$/, {
+    message: 'invalid_lk_mobile',
+  })
+  phone!: string;
+
+  @IsString()
+  nic!: string;
+
+  @IsString()
+  @MaxLength(120)
+  name!: string;
+
+  @IsOptional()
+  @IsIn(LOCALES as readonly string[])
+  preferredLanguage?: Locale;
+}
+
+export class RegisterDoctorDto {
+  @IsString()
+  @Matches(/^(?:\+94|94|0)7[\s\-]?\d{1}[\s\-]?\d{3}[\s\-]?\d{4}$/, {
+    message: 'invalid_lk_mobile',
+  })
+  phone!: string;
+
+  @IsString()
+  nic!: string;
+
+  @IsString()
+  @MaxLength(120)
+  name!: string;
+
+  @IsString()
+  slmcRegNo!: string;
+
+  @IsString()
+  specialty!: string;
+
+  @IsOptional()
+  consultationFeeLKR?: number;
+
+  @IsString()
+  dispensaryName!: string;
+
+  @IsString()
+  town!: string;
+
+  @IsString()
+  district!: string;
+
+  @IsOptional()
+  @IsString()
+  addressLine?: string;
+
+  @IsOptional()
+  @IsString()
+  bio?: string;
+}

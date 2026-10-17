@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Badge, Card, EmptyState, Skeleton, TokenNumber } from '@medqueue/ui';
 import { Link, useRouter } from '@/i18n/navigation';
 import { api, ApiError } from '@/lib/api';
+import { PatientHeader } from '@/components/patient-header';
 
 interface AppointmentRow {
   id: string;
@@ -54,7 +55,8 @@ export default function AppointmentsPage() {
   const history = (data ?? []).filter((a) => a.status !== 'BOOKED' && a.status !== 'IN_CONSULT');
 
   return (
-    <main className="min-h-dvh max-w-lg mx-auto px-4 pb-24 pt-6 flex flex-col gap-5">
+    <main className="min-h-dvh max-w-lg mx-auto px-4 pb-24 pt-4 flex flex-col gap-5">
+      <PatientHeader />
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight">{t('title')}</h1>
         <Link href="/" className="text-sm font-semibold text-primary-700">

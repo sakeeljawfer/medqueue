@@ -1,4 +1,18 @@
 {
+  "portals": {
+    "patient": "Patient",
+    "doctor": "Doctor",
+    "admin": "Admin",
+    "patientPortal": "Patient Portal",
+    "doctorConsole": "Doctor Console",
+    "adminPortal": "Admin Portal",
+    "switchTo": "Switch portal",
+    "patientSubtitle": "Sign in with your mobile number to book appointments and track live queue tokens.",
+    "doctorSubtitle": "Sign in to manage today's dispensary sessions and call patients.",
+    "adminSubtitle": "Sign in to verify SLMC registrations, manage users, and approve payments.",
+    "quickFill": "Quick-fill demo:",
+    "loggedAs": "Signed in as"
+  },
   "home": {
     "title": "MedQueue",
     "tagline": "See your place in the queue before you leave home.",
@@ -50,7 +64,8 @@
       "already_booked_this_session": "You already hold a token for this session.",
       "max_active_bookings_reached": "You can hold at most 3 active tokens. Cancel one to book again.",
       "session_full": "This session is fully booked.",
-      "session_over": "This session has ended."
+      "session_over": "This session has ended.",
+      "insufficient_role": "Only patients can book appointments. Please sign in as a patient."
     }
   },
   "days": {

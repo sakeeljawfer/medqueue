@@ -15,7 +15,13 @@ import { Public } from '../../common/decorators/public.decorator';
 import { ACCESS_COOKIE, REFRESH_COOKIE } from '../../common/guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { TokenService, type IssuedTokens } from './token.service';
-import { RequestOtpDto, VerifyOtpDto } from './dto/auth.dto';
+import {
+  LoginDto,
+  RegisterDoctorDto,
+  RegisterPatientDto,
+  RequestOtpDto,
+  VerifyOtpDto,
+} from './dto/auth.dto';
 
 const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
 
@@ -43,11 +49,53 @@ export class AuthController {
   }
 
   @Public()
+  @Post('login')
+  @HttpCode(200)
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ id: string; role: string; name: string | null; isNew: boolean; accessToken: string }> {
+    const { user, tokens, isNew } = await this.auth.login(dto.identifier, dto.password);
+    this.setCookies(res, tokens);
+    return { id: user.id, role: user.role, name: user.name, isNew, accessToken: tokens.accessToken };
+  }
+
+  @Public()
+  @Post('register/patient')
+  @HttpCode(201)
+  async registerPatient(
+    @Body() dto: RegisterPatientDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ id: string; role: string; name: string | null; isNew: boolean; accessToken: string }> {
+    const { user, tokens, isNew } = await this.auth.registerPatient(dto);
+    this.setCookies(res, tokens);
+    return { id: user.id, role: user.role, name: user.name, isNew, accessToken: tokens.accessToken };
+  }
+
+  @Public()
+  @Post('register/doctor')
+  @HttpCode(201)
+  async registerDoctor(
+    @Body() dto: RegisterDoctorDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ id: string; role: string; name: string | null; isNew: boolean; accessToken: string }> {
+    const { user, tokens, isNew } = await this.auth.registerDoctor(dto);
+    this.setCookies(res, tokens);
+    return { id: user.id, role: user.role, name: user.name, isNew, accessToken: tokens.accessToken };
+  }
+
+  @Public()
   @Post('otp/request')
   @HttpCode(202)
-  async requestOtp(@Body() dto: RequestOtpDto, @Ip() ip: string): Promise<{ sent: true }> {
-    await this.auth.requestOtp(dto.phone, ip);
-    return { sent: true };
+  async requestOtp(
+    @Body() dto: RequestOtpDto,
+    @Ip() ip: string,
+  ): Promise<{ sent: true; code?: string }> {
+    const code = await this.auth.requestOtp(dto.phone, ip);
+    return {
+      sent: true,
+      ...(this.env.SMS_PROVIDER === 'CONSOLE' ? { code } : {}),
+    };
   }
 
   @Public()
@@ -56,10 +104,10 @@ export class AuthController {
   async verifyOtp(
     @Body() dto: VerifyOtpDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ id: string; role: string; name: string | null; isNew: boolean }> {
+  ): Promise<{ id: string; role: string; name: string | null; isNew: boolean; accessToken: string }> {
     const { user, tokens, isNew } = await this.auth.verifyOtp(dto);
     this.setCookies(res, tokens);
-    return { id: user.id, role: user.role, name: user.name, isNew };
+    return { id: user.id, role: user.role, name: user.name, isNew, accessToken: tokens.accessToken };
   }
 
   @Public()
@@ -68,12 +116,12 @@ export class AuthController {
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ refreshed: true }> {
+  ): Promise<{ refreshed: true; accessToken: string }> {
     const presented = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE];
     if (!presented) throw new UnauthorizedException('missing_refresh_token');
     const rotated = await this.tokens.rotate(presented);
     this.setCookies(res, rotated);
-    return { refreshed: true };
+    return { refreshed: true, accessToken: rotated.accessToken };
   }
 
   /**

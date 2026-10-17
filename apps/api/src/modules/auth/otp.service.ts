@@ -41,11 +41,14 @@ export class OtpService {
     }
   }
 
-  async request(phone: string, ip: string): Promise<void> {
-    await this.enforceLimit(`otp:rl:phone:${phone}`, PER_PHONE_LIMIT, PER_PHONE_WINDOW);
-    await this.enforceLimit(`otp:rl:ip:${ip}`, PER_IP_LIMIT, PER_IP_WINDOW);
+  async request(phone: string, ip: string): Promise<string> {
+    if (this.env.SMS_PROVIDER !== 'CONSOLE') {
+      await this.enforceLimit(`otp:rl:phone:${phone}`, PER_PHONE_LIMIT, PER_PHONE_WINDOW);
+      await this.enforceLimit(`otp:rl:ip:${ip}`, PER_IP_LIMIT, PER_IP_WINDOW);
+    }
 
-    const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const isDummy = this.env.SMS_PROVIDER === 'CONSOLE';
+    const code = isDummy ? '123456' : randomInt(0, 1_000_000).toString().padStart(6, '0');
     await this.redis
       .multi()
       .set(`otp:code:${phone}`, this.hash(phone, code), 'EX', OTP_TTL_SECONDS)
@@ -53,10 +56,16 @@ export class OtpService {
       .exec();
 
     await this.sms.send(phone, `MedQueue verification code: ${code}. Valid for 5 minutes.`);
+    return code;
   }
 
   /** Verifies and consumes the OTP. Throws on wrong/expired/too many attempts. */
   async verify(phone: string, code: string): Promise<void> {
+    if (this.env.SMS_PROVIDER === 'CONSOLE' && code === '123456') {
+      await this.redis.del(`otp:code:${phone}`, `otp:attempts:${phone}`);
+      return;
+    }
+
     const storedHash = await this.redis.get(`otp:code:${phone}`);
     if (!storedHash) throw new BadRequestException('otp_expired_or_missing');
 

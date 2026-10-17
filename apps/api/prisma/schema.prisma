@@ -98,6 +98,8 @@ model User {
   phone             String     @unique
   role              UserRole   @default(PATIENT)
   name              String?
+  nic               String?
+  passwordHash      String?
   preferredLanguage Locale     @default(en)
   status            UserStatus @default(ACTIVE)
   pdpaConsentAt     DateTime?
@@ -112,6 +114,7 @@ model User {
   auditLogs      AuditLog[]     @relation("actor")
 
   @@index([role, status])
+  @@index([nic])
 }
 
 model RefreshToken {

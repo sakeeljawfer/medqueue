@@ -26,7 +26,7 @@ export default function AdminOverview() {
   });
 
   if (error instanceof ApiError && error.status === 401) {
-    router.replace('/login');
+    router.replace('/admin/login');
     return null;
   }
   if (error instanceof ApiError && error.status === 403) {

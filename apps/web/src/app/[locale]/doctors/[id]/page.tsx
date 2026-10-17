@@ -8,6 +8,7 @@ import { Avatar, Badge, Button, Card, LiveIndicator, Skeleton, useToast } from '
 import { DISTRICTS, formatLKR, type Locale } from '@medqueue/shared';
 import { useRouter } from '@/i18n/navigation';
 import { api, ApiError } from '@/lib/api';
+import { PatientHeader } from '@/components/patient-header';
 
 const DispensaryMap = dynamic(() => import('@/components/dispensary-map'), {
   ssr: false,
@@ -103,10 +104,12 @@ export default function DoctorPage({ params }: { params: Promise<{ id: string }>
     DISTRICTS.find((d) => d.slug === slug)?.[locale] ?? slug;
 
   return (
-    <main className="min-h-dvh max-w-lg mx-auto px-4 pb-24 pt-6 flex flex-col gap-5">
-      <button onClick={() => router.back()} className="text-sm text-primary-700 font-semibold self-start">
-        ← {t('back')}
-      </button>
+    <div className="min-h-dvh flex flex-col bg-surface">
+      <PatientHeader />
+      <main className="max-w-lg w-full mx-auto px-4 pb-24 pt-4 flex flex-col gap-5">
+        <button onClick={() => router.back()} className="text-sm text-primary-700 font-semibold self-start hover:underline">
+          ← {t('back')}
+        </button>
 
       <header className="flex items-center gap-4">
         <Avatar src={doctor.photoUrl} name={doctor.name ?? 'Dr'} size={64} />
@@ -191,6 +194,7 @@ export default function DoctorPage({ params }: { params: Promise<{ id: string }>
           </Card>
         );
       })}
-    </main>
+      </main>
+    </div>
   );
 }

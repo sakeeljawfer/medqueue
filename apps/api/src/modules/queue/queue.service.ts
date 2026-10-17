@@ -25,13 +25,13 @@ export class QueueService {
 
   // ---------- helpers ----------
 
-  private async requireDoctorSession(doctorUserId: string, sessionId: string) {
+  private async requireDoctorSession(doctorUserId: string, sessionId: string, role?: string) {
     const session = await this.prisma.session.findUnique({
       where: { id: sessionId },
       include: { schedule: { include: { dispensary: { include: { doctor: true } } } } },
     });
     if (!session) throw new NotFoundException('session_not_found');
-    if (session.schedule.dispensary.doctor.userId !== doctorUserId) {
+    if (role !== 'ADMIN' && session.schedule.dispensary.doctor.userId !== doctorUserId) {
       throw new ForbiddenException('not_your_session');
     }
     return session;
@@ -61,13 +61,13 @@ export class QueueService {
 
   // ---------- session lifecycle (doctor) ----------
 
-  async startSession(doctorUserId: string, scheduleId: string) {
+  async startSession(doctorUserId: string, scheduleId: string, role?: string) {
     const schedule = await this.prisma.sessionSchedule.findUnique({
       where: { id: scheduleId },
       include: { dispensary: { include: { doctor: true } } },
     });
     if (!schedule) throw new NotFoundException('schedule_not_found');
-    if (schedule.dispensary.doctor.userId !== doctorUserId) {
+    if (role !== 'ADMIN' && schedule.dispensary.doctor.userId !== doctorUserId) {
       throw new ForbiddenException('not_your_schedule');
     }
     if (schedule.dispensary.doctor.approvalStatus !== 'APPROVED') {
@@ -108,8 +108,8 @@ export class QueueService {
     return session;
   }
 
-  async pauseSession(doctorUserId: string, sessionId: string) {
-    const session = await this.requireDoctorSession(doctorUserId, sessionId);
+  async pauseSession(doctorUserId: string, sessionId: string, role?: string) {
+    const session = await this.requireDoctorSession(doctorUserId, sessionId, role);
     if (session.status !== 'LIVE') throw new BadRequestException('session_not_live');
     const updated = await this.prisma.session.update({
       where: { id: sessionId },
@@ -126,8 +126,8 @@ export class QueueService {
     return updated;
   }
 
-  async resumeSession(doctorUserId: string, sessionId: string) {
-    const session = await this.requireDoctorSession(doctorUserId, sessionId);
+  async resumeSession(doctorUserId: string, sessionId: string, role?: string) {
+    const session = await this.requireDoctorSession(doctorUserId, sessionId, role);
     if (session.status !== 'PAUSED') throw new BadRequestException('session_not_paused');
     const updated = await this.prisma.session.update({
       where: { id: sessionId },
@@ -139,8 +139,8 @@ export class QueueService {
   }
 
   /** End session: reconcile Redis → Postgres, cancel unserved bookings. */
-  async endSession(doctorUserId: string, sessionId: string) {
-    const session = await this.requireDoctorSession(doctorUserId, sessionId);
+  async endSession(doctorUserId: string, sessionId: string, role?: string) {
+    const session = await this.requireDoctorSession(doctorUserId, sessionId, role);
     if (session.status !== 'LIVE' && session.status !== 'PAUSED') {
       throw new BadRequestException('session_not_active');
     }
@@ -192,8 +192,8 @@ export class QueueService {
   }
 
   /** Doctor taps "Next": completes the current consult and calls the next token. */
-  async advance(doctorUserId: string, sessionId: string) {
-    const session = await this.requireDoctorSession(doctorUserId, sessionId);
+  async advance(doctorUserId: string, sessionId: string, role?: string) {
+    const session = await this.requireDoctorSession(doctorUserId, sessionId, role);
     if (session.status !== 'LIVE') throw new BadRequestException('session_not_live');
 
     await this.completeCurrent(sessionId);
@@ -230,8 +230,8 @@ export class QueueService {
   }
 
   /** Doctor marks the currently-called patient a no-show and moves on. */
-  async markNoShow(doctorUserId: string, sessionId: string) {
-    const session = await this.requireDoctorSession(doctorUserId, sessionId);
+  async markNoShow(doctorUserId: string, sessionId: string, role?: string) {
+    const session = await this.requireDoctorSession(doctorUserId, sessionId, role);
     if (session.status !== 'LIVE') throw new BadRequestException('session_not_live');
 
     const current = await this.prisma.appointment.findFirst({
@@ -257,7 +257,7 @@ export class QueueService {
     });
     await this.state.incrementServed(sessionId);
 
-    return this.advance(doctorUserId, sessionId);
+    return this.advance(doctorUserId, sessionId, role);
   }
 
   // ---------- booking (patient) ----------

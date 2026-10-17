@@ -1,8 +1,8 @@
 'use client';
 
-import { use, useMemo } from 'react';
+import { use, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, Skeleton } from '@medqueue/ui';
 import type { QueueState, QueueYou } from '@medqueue/shared';
 import { useRouter } from '@/i18n/navigation';
@@ -29,18 +29,28 @@ export default function TicketPage({
   const { sessionId } = use(params);
   const t = useTranslations('ticket');
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { data: initial } = useQuery({
     queryKey: ['ticket', sessionId],
     queryFn: () => api<Ticket>(`/appointments/sessions/${sessionId}/ticket`),
-    refetchInterval: 60_000, // slow safety net; the socket is the fast path
+    refetchInterval: 3_000,
   });
   const { data: session } = useQuery({
     queryKey: ['session', sessionId],
     queryFn: () => api<SessionDetail>(`/sessions/${sessionId}`),
+    refetchInterval: 3_000,
   });
 
   const live = useQueueSocket(sessionId);
+
+  useEffect(() => {
+    if (live.lastUpdated || live.state) {
+      void queryClient.invalidateQueries({ queryKey: ['ticket', sessionId] });
+      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+    }
+  }, [live.lastUpdated, live.state, queryClient, sessionId]);
+
   const state = live.state ?? initial?.state ?? null;
   const you = live.you ?? initial?.you ?? null;
 

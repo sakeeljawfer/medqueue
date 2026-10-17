@@ -4,7 +4,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AccessPayload } from '../auth/token.service';
 import { QueueService } from '../queue/queue.service';
 
-@Roles('PATIENT')
+@Roles('PATIENT', 'ADMIN', 'DOCTOR')
 @Controller('appointments')
 export class AppointmentsController {
   constructor(private readonly queue: QueueService) {}

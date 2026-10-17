@@ -124,8 +124,10 @@ export class DoctorsSearchController {
 
   @Get('doctors/:id')
   async detail(@Param('id') id: string) {
-    const profile = await this.prisma.doctorProfile.findUnique({
-      where: { id },
+    const profile = await this.prisma.doctorProfile.findFirst({
+      where: {
+        OR: [{ id }, { userId: id }],
+      },
       include: {
         user: { select: { name: true } },
         dispensaries: { include: { schedules: { where: { active: true } } } },

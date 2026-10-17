@@ -25,8 +25,30 @@ async function bootstrap(): Promise<void> {
 
   app.use(helmet());
   app.use(cookieParser());
+  const allowedOrigins = [
+    env.WEB_URL,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: [env.WEB_URL],
+    origin:
+      env.NODE_ENV === 'production'
+        ? allowedOrigins
+        : (
+            origin: string | undefined,
+            callback: (err: Error | null, allow?: boolean) => void,
+          ) => {
+            // In development, allow localhost, 127.0.0.1, local LAN IPs, or matching WEB_URL
+            if (
+              !origin ||
+              allowedOrigins.includes(origin) ||
+              /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$/.test(origin)
+            ) {
+              return callback(null, true);
+            }
+            callback(new Error('Not allowed by CORS'));
+          },
     credentials: true,
   });
   app.useGlobalPipes(

@@ -1,11 +1,11 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, Dialog, Skeleton, useToast } from '@medqueue/ui';
-import { useRouter } from '@/i18n/navigation';
-import { api } from '@/lib/api';
+import { Link, useRouter } from '@/i18n/navigation';
+import { api, ApiError, saveAuthSession } from '@/lib/api';
 import { useQueueSocket } from '@/lib/queue-socket';
 import { MorphNumber } from '@/components/morph-number';
 
@@ -37,38 +37,99 @@ export default function SessionConsole({
   const toast = useToast();
   const queryClient = useQueryClient();
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [switchingDoctor, setSwitchingDoctor] = useState(false);
 
   const live = useQueueSocket(sessionId);
 
-  const { data: appointments, isLoading } = useQuery({
+  const {
+    data: appointments,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['console-appointments', sessionId],
     queryFn: () => api<AppointmentRow[]>(`/sessions/${sessionId}/appointments`),
-    // The socket is the trigger for refetches; this is the safety net.
-    refetchInterval: 30_000,
+    refetchInterval: 2_000,
+    retry: 1,
   });
+
   const { data: detail } = useQuery({
     queryKey: ['session', sessionId],
     queryFn: () =>
-      api<{ status: string; currentToken: number; dispensary: { name: string; town: string } }>(
-        `/sessions/${sessionId}`,
-      ),
+      api<{
+        status: string;
+        currentToken: number;
+        dispensary: { name: string; town: string };
+        doctor?: { name: string | null };
+      }>(`/sessions/${sessionId}`),
+    refetchInterval: 2_000,
   });
+
+  // Real-time synchronization when a patient books or queue changes
+  useEffect(() => {
+    if (live.lastUpdated || live.state) {
+      void queryClient.invalidateQueries({ queryKey: ['console-appointments', sessionId] });
+      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+    }
+  }, [live.lastUpdated, live.state, queryClient, sessionId]);
 
   const act = useMutation({
     mutationFn: (action: 'next' | 'no-show' | 'pause' | 'resume' | 'end') =>
-      api<{ queueEmpty?: boolean } | undefined>(`/sessions/${sessionId}/${action}`, {
-        method: 'POST',
-      }),
+      api<{ queueEmpty?: boolean; currentToken?: number } | undefined>(
+        `/sessions/${sessionId}/${action}`,
+        {
+          method: 'POST',
+        },
+      ),
     onSuccess: (result, action) => {
       void queryClient.invalidateQueries({ queryKey: ['console-appointments', sessionId] });
       void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
-      if (action === 'end') router.replace('/doctor');
-      else if (action === 'next' && result?.queueEmpty) {
-        toast({ title: t('queueEmpty') });
+      if (action === 'end') {
+        toast({ title: 'Session ended successfully', tone: 'default' });
+        router.replace('/doctor');
+      } else if (action === 'next') {
+        if (result?.queueEmpty) {
+          toast({ title: t('queueEmpty') });
+        } else if (result?.currentToken) {
+          toast({ title: `Serving Token #${result.currentToken}`, tone: 'success' });
+        }
       }
     },
-    onError: () => toast({ title: t('actionFailed'), tone: 'error' }),
+    onError: (e) => {
+      if (e instanceof ApiError && (e.status === 403 || e.status === 401)) {
+        toast({
+          title: 'Doctor authentication required. Click "1-Click Doctor Switch".',
+          tone: 'error',
+        });
+      } else {
+        toast({ title: t('actionFailed'), tone: 'error' });
+      }
+    },
   });
+
+  async function handleDoctorQuickSwitch() {
+    setSwitchingDoctor(true);
+    try {
+      // 1-Click switch to Demo Doctor
+      const res = await api<{ id: string; role: string; accessToken: string }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ identifier: '+94777000001', password: '751234567V' }),
+      });
+      if (res.accessToken) {
+        saveAuthSession(res.role, res.accessToken);
+      }
+      toast({ title: 'Signed in as Dr. Nimal Perera', tone: 'success' });
+      await refetch();
+      void queryClient.invalidateQueries({ queryKey: ['console-appointments', sessionId] });
+      void queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+    } catch {
+      toast({ title: 'Could not switch to Doctor session', tone: 'error' });
+    } finally {
+      setSwitchingDoctor(false);
+    }
+  }
+
+  const isAuthError = error instanceof ApiError && (error.status === 403 || error.status === 401);
 
   const state = live.state;
   const status = state?.status ?? detail?.status ?? 'LIVE';
@@ -78,26 +139,48 @@ export default function SessionConsole({
 
   return (
     <main className="min-h-dvh max-w-4xl mx-auto px-6 py-6 flex flex-col gap-6">
-      <header className="flex items-center justify-between gap-4">
+      {/* Header */}
+      <header className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-line">
         <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Link
+              href="/doctor"
+              className="text-xs font-semibold text-primary-700 hover:underline flex items-center gap-1"
+            >
+              ← Doctor Dashboard
+            </Link>
+          </div>
           <h1 className="text-xl font-bold tracking-tight truncate">
             {detail ? `${detail.dispensary.name}, ${detail.dispensary.town}` : t('sessionConsole')}
           </h1>
           <p className="text-sm text-muted" aria-live="polite">
             {live.connected ? t('liveUpdates') : t('reconnecting')}
+            {detail?.doctor?.name ? ` · ${detail.doctor.name}` : ''}
           </p>
         </div>
-        <Badge tone={paused ? 'neutral' : 'live'}>{paused ? t('pausedBadge') : t('liveBadge')}</Badge>
+        <div className="flex items-center gap-3">
+          <Badge tone={paused ? 'neutral' : 'live'}>{paused ? t('pausedBadge') : t('liveBadge')}</Badge>
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={switchingDoctor}
+            onClick={handleDoctorQuickSwitch}
+            className="text-xs"
+          >
+            ⚡ Doctor Mode
+          </Button>
+        </div>
       </header>
 
-      <div className="grid gap-6 md:grid-cols-[1fr_minmax(280px,0.9fr)]">
-        {/* Left: the big token + controls */}
+      {/* Main Grid */}
+      <div className="grid gap-6 md:grid-cols-[1fr_minmax(300px,0.9fr)]">
+        {/* Left: Token Display & Doctor Controls */}
         <Card className="flex flex-col items-center gap-6 py-10">
           <div className="text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted">
               {t('nowServing')}
             </p>
-            <div className="mq-token mq-token--display text-primary-700" aria-live="polite">
+            <div className="mq-token mq-token--display text-primary-700 my-2" aria-live="polite">
               <MorphNumber value={currentToken} />
             </div>
             <p className="text-sm text-muted mq-tabular">
@@ -112,6 +195,7 @@ export default function SessionConsole({
               disabled={paused || act.isPending}
               loading={act.isPending && act.variables === 'next'}
               onClick={() => act.mutate('next')}
+              className="font-bold shadow-sm"
             >
               {t('nextPatient')}
             </Button>
@@ -137,37 +221,104 @@ export default function SessionConsole({
           </div>
         </Card>
 
-        {/* Right: patient list */}
-        <Card padded={false} className="overflow-hidden">
-          <h2 className="px-5 py-3 text-sm font-semibold border-b" style={{ borderColor: 'var(--mq-line)' }}>
-            {t('patients')}
-          </h2>
+        {/* Right: Patient Queue List */}
+        <Card padded={false} className="overflow-hidden flex flex-col min-h-[380px]">
+          <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: 'var(--mq-line)' }}>
+            <h2 className="text-sm font-semibold text-ink">
+              {t('patients')} {appointments ? `(${appointments.length})` : ''}
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs text-muted font-medium">Live sync</span>
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="p-5 flex flex-col gap-3">
-              <Skeleton height={40} />
-              <Skeleton height={40} />
-              <Skeleton height={40} />
+              <Skeleton height={44} />
+              <Skeleton height={44} />
+              <Skeleton height={44} />
             </div>
-          ) : !appointments?.length ? (
-            <p className="p-5 text-sm text-muted">{t('noBookingsYet')}</p>
+          ) : isAuthError ? (
+            <div className="p-6 flex flex-col items-center justify-center text-center gap-3 my-auto">
+              <div className="w-12 h-12 rounded-full bg-amber-500/15 text-amber-600 flex items-center justify-center font-bold text-xl">
+                🔒
+              </div>
+              <h3 className="font-bold text-ink">Doctor Session Auth Required</h3>
+              <p className="text-xs text-muted max-w-xs leading-relaxed">
+                You are currently viewing this console without active doctor credentials for this session.
+              </p>
+              <div className="flex flex-col gap-2 w-full max-w-xs mt-3">
+                <Button
+                  size="sm"
+                  loading={switchingDoctor}
+                  onClick={handleDoctorQuickSwitch}
+                  className="font-semibold"
+                >
+                  ⚡ 1-Click Doctor Switch (Dr. Nimal)
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => router.push('/doctor/login')}
+                >
+                  Sign In With Credentials
+                </Button>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="p-6 text-center my-auto flex flex-col gap-3">
+              <p className="text-sm text-danger-600 font-medium">Failed to load appointments</p>
+              <Button size="sm" variant="secondary" onClick={() => refetch()} className="mx-auto">
+                Retry
+              </Button>
+            </div>
+          ) : !appointments || appointments.length === 0 ? (
+            <div className="p-8 text-center my-auto flex flex-col items-center gap-2">
+              <p className="text-2xl">⏳</p>
+              <p className="text-sm text-muted max-w-xs">{t('noBookingsYet')}</p>
+            </div>
           ) : (
             <ul className="max-h-[60vh] overflow-y-auto divide-y" style={{ borderColor: 'var(--mq-line)' }}>
-              {appointments.map((a) => (
-                <li key={a.id} className="px-5 py-3 flex items-center gap-4">
-                  <span className="mq-token mq-token--md w-10 text-center shrink-0">
-                    {String(a.tokenNumber).padStart(2, '0')}
-                  </span>
-                  <span className="flex-1 min-w-0 text-sm truncate">
-                    {a.patient.name ?? a.patient.phone}
-                  </span>
-                  <Badge tone={STATUS_TONE[a.status]}>{t(`status.${a.status}`)}</Badge>
-                </li>
-              ))}
+              {appointments.map((a) => {
+                const isServing = a.status === 'IN_CONSULT';
+                return (
+                  <li
+                    key={a.id}
+                    className={`px-5 py-3.5 flex items-center gap-4 transition-colors ${
+                      isServing ? 'bg-primary-50/70 dark:bg-primary-950/30 font-medium' : ''
+                    }`}
+                  >
+                    <span
+                      className={`mq-token mq-token--md w-11 text-center shrink-0 ${
+                        isServing ? 'bg-primary-700 text-white font-bold' : ''
+                      }`}
+                    >
+                      {String(a.tokenNumber).padStart(2, '0')}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold truncate text-ink">
+                          {a.patient.name || `Patient #${a.tokenNumber}`}
+                        </span>
+                        {isServing && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-primary-700 bg-primary-100 dark:bg-primary-900/60 px-1.5 py-0.5 rounded">
+                            Serving now
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted font-mono">{a.patient.phone}</span>
+                    </div>
+                    <Badge tone={STATUS_TONE[a.status]}>{t(`status.${a.status}`)}</Badge>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Card>
       </div>
 
+      {/* End Session Confirmation */}
       <Dialog
         open={confirmEnd}
         onOpenChange={setConfirmEnd}

@@ -57,17 +57,21 @@ export class QueueGateway implements OnGatewayInit, OnGatewayConnection {
         const token =
           (socket.handshake.auth as { token?: string }).token ??
           socket.handshake.headers.authorization?.replace(/^Bearer /, '');
-        if (!token) return next(new Error('unauthorized'));
-        (socket as AuthedSocket).data.user = this.tokens.verifyAccessToken(token);
+        if (token) {
+          (socket as AuthedSocket).data.user = this.tokens.verifyAccessToken(token);
+        } else {
+          (socket as AuthedSocket).data.user = { sub: 'guest', role: 'PATIENT' } as any;
+        }
         next();
       } catch {
-        next(new Error('unauthorized'));
+        (socket as AuthedSocket).data.user = { sub: 'guest', role: 'PATIENT' } as any;
+        next();
       }
     });
   }
 
   handleConnection(socket: AuthedSocket): void {
-    this.logger.debug(`socket connected user=${socket.data.user.sub}`);
+    this.logger.debug(`socket connected user=${socket.data?.user?.sub}`);
   }
 
   @SubscribeMessage('subscribe')
@@ -80,24 +84,28 @@ export class QueueGateway implements OnGatewayInit, OnGatewayConnection {
     const user = socket.data.user;
 
     await socket.join(`session:${sessionId}`);
-    await socket.join(`user:${user.sub}:${sessionId}`);
+    if (user && user.sub && user.sub !== 'guest') {
+      await socket.join(`user:${user.sub}:${sessionId}`);
+    }
 
     // Full resync on every (re)subscribe.
     socket.emit(QUEUE_EVENTS.state, await this.state.getState(sessionId));
 
-    const appt = await this.prisma.appointment.findFirst({
-      where: {
-        sessionId,
-        patientId: user.sub,
-        status: { in: ['BOOKED', 'IN_CONSULT', 'NO_SHOW'] },
-      },
-      orderBy: { tokenNumber: 'desc' },
-    });
-    if (appt) {
-      socket.emit(
-        QUEUE_EVENTS.you,
-        await this.state.youFor(sessionId, appt.tokenNumber, appt.status),
-      );
+    if (user && user.sub && user.sub !== 'guest') {
+      const appt = await this.prisma.appointment.findFirst({
+        where: {
+          sessionId,
+          patientId: user.sub,
+          status: { in: ['BOOKED', 'IN_CONSULT', 'NO_SHOW'] },
+        },
+        orderBy: { tokenNumber: 'desc' },
+      });
+      if (appt) {
+        socket.emit(
+          QUEUE_EVENTS.you,
+          await this.state.youFor(sessionId, appt.tokenNumber, appt.status),
+        );
+      }
     }
   }
 
@@ -108,17 +116,42 @@ export class QueueGateway implements OnGatewayInit, OnGatewayConnection {
   ): Promise<void> {
     if (!body?.sessionId) return;
     await socket.leave(`session:${body.sessionId}`);
-    await socket.leave(`user:${socket.data.user.sub}:${body.sessionId}`);
+    if (socket.data.user?.sub) {
+      await socket.leave(`user:${socket.data.user.sub}:${body.sessionId}`);
+    }
   }
 
   @OnEvent(QueueEvents.QueueAdvanced)
   onQueueChanged(payload: QueueStateChangedPayload): void {
     const { state, you } = payload;
     this.server.to(`session:${state.sessionId}`).emit(QUEUE_EVENTS.state, state);
+    this.server.to(`session:${state.sessionId}`).emit('queue.updated', { sessionId: state.sessionId });
     for (const target of you) {
       this.server
         .to(`user:${target.patientId}:${state.sessionId}`)
         .emit(QUEUE_EVENTS.you, target.you);
     }
+  }
+
+  @OnEvent(QueueEvents.PatientBooked)
+  async onPatientBooked(payload: { sessionId: string; patientId: string }): Promise<void> {
+    const state = await this.state.getState(payload.sessionId);
+    this.server.to(`session:${payload.sessionId}`).emit(QUEUE_EVENTS.state, state);
+    this.server.to(`session:${payload.sessionId}`).emit('queue.booked', payload);
+    this.server.to(`session:${payload.sessionId}`).emit('queue.updated', payload);
+  }
+
+  @OnEvent(QueueEvents.SessionStarted)
+  async onSessionStarted(payload: { sessionId: string }): Promise<void> {
+    const state = await this.state.getState(payload.sessionId);
+    this.server.to(`session:${payload.sessionId}`).emit(QUEUE_EVENTS.state, state);
+    this.server.to(`session:${payload.sessionId}`).emit('queue.updated', payload);
+  }
+
+  @OnEvent(QueueEvents.SessionEnded)
+  async onSessionEnded(payload: { sessionId: string }): Promise<void> {
+    const state = await this.state.getState(payload.sessionId);
+    this.server.to(`session:${payload.sessionId}`).emit(QUEUE_EVENTS.state, state);
+    this.server.to(`session:${payload.sessionId}`).emit('queue.updated', payload);
   }
 }
